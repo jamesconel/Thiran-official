@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiran AI - Smart Guard</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --primary: #2563eb;
+            --accent: #10b981;
+            --border: #e2e8f0;
+            --warn-bg: #fef2f2;
+            --warn-border: #ef4444;
+            --code-bg: #0f172a;
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --primary: #3b82f6;
+            --border: #334155;
+            --warn-bg: #451a1a;
+            --warn-border: #f87171;
+            --code-bg: #020617;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; transition: background 0.2s, color 0.2s; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 700px; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid var(--border); position: relative; }
+        
+        /* Navigation & Utilities */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .theme-btn { padding: 6px 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; border-radius: 20px; font-size: 0.85rem; }
+        .nav-btn { background: #64748b; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .nav-btn:hover { opacity: 0.9; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; padding: 14px; font-size: 1rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 25px; font-weight: bold; }
+        .btn-primary:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+
+        /* Multi-Page Configuration */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        header h1 { color: var(--primary); text-align: center; margin-bottom: 5px; }
+        header p { text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 25px; }
+        
+        label { font-weight: bold; display: block; margin: 15px 0 8px 0; }
+        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 6px; font-size: 1rem; }
+        
+        /* Interactive Clickable Models Grid */
+        .model-list { margin-top: 15px; }
+        .model-item { padding: 16px; border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px; background: var(--bg); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
+        .model-item:hover { border-color: var(--primary); transform: scale(1.01); }
+        .model-item.selected { border-color: var(--accent); background: #f0fdf4; }
+        [data-theme="dark"] .model-item.selected { background: #052e16; border-color: var(--accent); }
+        .model-info { flex: 1; }
+        .model-item strong { color: var(--primary); font-size: 1.05rem; }
+        .heavy-tag { padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-left: 10px; white-space: nowrap; }
+        
+        /* Structural Status Tags */
+        .tag-light { background: #e0f2fe; color: #0369a1; }
+        .tag-normal { background: #dcfce7; color: #15803d; }
+        .tag-medium { background: #fef3c7; color: #b45309; }
+        .tag-heavy { background: #ffeeeb; color: #b91c1c; border: 1px dashed #f87171; }
+
+        /* Integration Strategy Cards */
+        .method-container { display: flex; gap: 15px; margin-top: 20px; }
+        .method-card { flex: 1; border: 2px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; background: var(--bg); }
+        .method-card:hover { border-color: var(--primary); }
+
+        /* Directory Asset visualizer tree */
+        .folder-tree { background: var(--bg); padding: 15px; border-left: 4px solid var(--accent); border-radius: 4px; font-family: monospace; margin: 15px 0; line-height: 1.5; }
+
+        /* Command Line Micro blocks */
+        .step-block { margin-bottom: 15px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+        .step-info { font-size: 0.9rem; font-weight: bold; margin-bottom: 6px; color: var(--text); }
+        .code-row { display: flex; background: var(--code-bg); border-radius: 4px; overflow: hidden; align-items: center; }
+        .code-text { flex: 1; color: #cbd5e1; padding: 10px; font-family: monospace; font-size: 0.95rem; white-space: nowrap; overflow-x: auto; }
+        .row-copy-btn { background: #475569; color: white; border: none; padding: 10px 14px; cursor: pointer; font-size: 0.85rem; height: 100%; }
+        .row-copy-btn:hover { background: var(--primary); }
+
+        /* Risk Disclosures styling */
+        .impact-box { background: var(--warn-bg); border: 1px solid var(--warn-border); padding: 18px; border-radius: 8px; margin-top: 25px; line-height: 1.6; }
+        .impact-box h3 { color: #ef4444; margin-bottom: 8px; }
+        .disclaimer { font-style: italic; margin-top: 15px; font-size: 0.9rem; color: #64748b; border-top: 1px dashed var(--border); padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <button id="backBtn" class="nav-btn" onclick="goBack()" style="visibility: hidden;">⬅ Back</button>
+        <button class="theme-btn" onclick="toggleTheme()">🌓 Theme Mode</button>
+    </div>
+
+    <!-- PAGE 1: HOST ROUTING & INITIAL CONFIGS -->
+    <div id="page1" class="page active">
+        <header>
+            <h1>Thiran AI</h1>
+            <p>Smart LLM Guard - Prevent System Crashes</p>
+        </header>
+        
+        <label>🌐 Choose Language / மொழி தேர்வு</label>
+        <select id="langSelect" onchange="updateLocalization()">
+            <option value="ar">Arabic (العربية)</option>
+            <option value="bn">Bengali (বাংলা)</option>
+            <option value="en" selected>English</option>
+            <option value="fr">French (Français)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="gu">Gujarati (ગુજરાતી)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="kn">Kannada (ಕನ್ನಡ)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="ml">Malayalam (മലയാളം)</option>
+            <option value="zh">Mandarin Chinese (简体中文)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="ta">Tamil (தமிழ்)</option>
+            <option value="te">Telugu (తెలుగు)</option>
+            <option value="ur">Urdu (اردو)</option>
+        </select>
+
+        <label id="lbl-ram">Enter Your Device RAM (GB):</label>
+        <input type="number" id="ramInput" placeholder="e.g. 4, 8, 16, 32">
+        
+        <button class="btn-primary" id="btn-check-ram" onclick="validateAndProceed()">Check Safe Models ➡</button>
+    </div>
+
+    <!-- PAGE 2: INTERACTIVE INTERFACE WITH CLICK TO SELECT OPTION -->
+    <div id="page2" class="page">
+        <header>
+            <h1 id="lbl-p2-title">Select Your Model</h1>
+            <p id="lbl-p2-desc">Click on any safe model below to select it for your chatbot deployment:</p>
+        </header>
+        
+        <div class="model-list" id="modelListContainer"></div>
+
+        <!-- Next button is initially disabled until an entry is selected -->
+        <button class="btn-primary" id="btn-p2-next" onclick="toPage3()" disabled>Next: Choose Method ➡</button>
+    </div>
+
+    <!-- PAGE 3: INTEGRATION SELECTION -->
+    <div id="page3" class="page">
+        <header>
+            <h1 id="lbl-p3-title">Choose Deployment Path</h1>
+            <p id="lbl-p3-desc">Select how you want to configure files on your hard drive.</p>
+        </header>
+
+        <div class="method-container">
+            <div class="method-card" onclick="toPage4('web')">
+                <h2 style="font-size: 1.3rem; margin-bottom: 8px;">🌐 Official Web Way</h2>
+                <p style="font-size: 0.85rem; color:#64748b;">Download using standard browsers and drag to your folder asset system.</p>
+            </div>
+            <div class="method-card" onclick="toPage4('terminal')">
+                <h2 style="font-size: 1.3rem; margin-bottom: 8px;">💻 Terminal Way</h2>
+                <p style="font-size: 0.85rem; color:#64748b;">Execute clean line-by-line lightweight scripts securely.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 4: DETAILED OPERATIONAL PATHS -->
+    <div id="page4" class="page">
+        <header>
+            <h1 id="lbl-p4-title">Execution Steps</h1>
+            <p id="lbl-p4-desc">Follow these targeted operations precisely to setup local files.</p>
+        </header>
+
+        <label id="lbl-struct-title">Required Folder Architecture:</label>
+        <div class="folder-tree">
+            📁 Downloads<br>
+            └── 📁 llm models<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── 📁 models 1
+        </div>
+
+        <div id="instructionsContainer"></div>
+
+        <div class="impact-box">
+            <h3 id="lbl-impact-title">Device Crash Analysis</h3>
+            <p id="lbl-impact-desc"></p>
+            <p class="disclaimer" id="lbl-disclaimer"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const translations = {
+        ta: {
+            ramLabel: "உங்கள் சாதனத்தின் ரேம் (RAM) அளவை உள்ளிடவும் (GB):",
+            checkBtn: "பாதுகாப்பான மாடல்களைச் சரிபார் ➡",
+            p2Title: "மாடலைத் தேர்ந்தெடுக்கவும்",
+            p2Desc: "கீழே உள்ள பட்டியலில் உங்களுக்குத் தேவையான மாடலைக் கிளிக் செய்து தேர்வு செய்யவும்:",
+            p2NextBtn: "அடுத்த பக்கம்: டவுன்லோடு முறை தேர்வு ➡",
+            p3Title: "டவுன்லோடு முறையைத் தேர்ந்தெடுக்கவும்",
+            p3Desc: "சாட்பாட் கோப்பகத்தில் மாடலை இணைக்க எந்த வழிமுறை உங்களுக்கு வேண்டும்?",
+            p4Title: "செயல்படுத்தும் வழிமுறைகள்",
+            p4Desc: "உங்கள் கணினியில் கோப்புகளைத் துல்லியமாக அமைக்க கீழே உள்ள படிகளைப் பின்பற்றவும்.",
+            structTitle: "உருவாக்க வேண்டிய ஃபோல்டர் கட்டமைப்பு:",
+            impactTitle: "⚠️ சிஸ்டம் கிராஷ் மற்றும் அதன் தீவிர பாதிப்புகள்:",
+            impactDesc: "உங்கள் லேப்டாப்பில் உள்ள மொத்த ரேம் அளவுக்கு நிகரான பெரிய LLM மாடல்களை இயக்கினால், கணினியின் மெமரி முற்றிலும் ஸ்தம்பித்துவிடும். இதனால் லேப்டாப் இயங்காமல் அப்படியே ஃப்ரீஸ் (Freeze) ஆகிவிடும் அல்லது சிஸ்டம் கிராஷ் (Crash) ஆகிவிடும். இதன் காரணமாக உங்கள் முக்கிய கோப்புகள் மற்றும் சேமிக்கப்படாத வேலைகள் அழியக்கூடும். இதனைத் தவிர்க்கவே, Thiran AI உங்கள் ரேமிற்குப் பொருத்தமான பாதுகாப்பான மாடல்களை மட்டும் காட்டுகிறது.",
+            disclaimer: "விழிப்புணர்வு அறிவிப்பு: இது முழுக்க முழுக்க பயனர்களின் கணினிப் பாதுகாப்பிற்காக உருவாக்கப்பட்ட எளிய வழிகாட்டி மட்டுமே. எந்த ஒரு குறிப்பிட்ட மாடலையோ அல்லது வழிமுறையையோ டவுன்லோட் செய்யுமாறு நாங்கள் யாரையும் கட்டாயப்படுத்தவில்லை. உங்களின் சொந்த விருப்பத்தின் அடிப்படையிலேயே முடிவெடுக்கலாம்.",
+            copy: "Copy", copied: "Copied!",
+            webStep1: "படி 1: உங்கள் பிரவுசரைத் திறந்து அதிகாரப்பூர்வ தளம் (Llama/Ollama) வழியாக {model} மாடலை டவுன்லோட் செய்யவும்.",
+            webStep2: "படி 2: டவுன்லோட் செய்த கோப்பை, நீங்கள் உருவாக்கிய 'llm models ➔ models 1' என்ற ஃபோல்டருக்குள் நகர்த்தவும்.",
+            webStep3: "படி 3: உங்கள் சாட்பாட் அப்ளிகேஷனை முற்றிலும் மூடிவிட்டு மீண்டும் திறக்கவும். அது மாடலைத் தானாகவே கண்டறிந்துவிடும்.",
+            tInfo1: "படி 1: தற்போதைய டெர்மினல் இருப்பிடத்தை சரிபார்க்க",
+            tInfo2: "படி 2: சிஸ்டத்தின் டவுன்லோட்ஸ் (Downloads) ஃபோல்டருக்குள் செல்ல",
+            tInfo3: "படி 3: இரண்டு ஃபோல்டர்களை ஒரே கமாண்டில் பாதுகாப்பாக உருவாக்க",
+            tInfo4: "படி 4: புதிதாக உருவாக்கிய மாடல் ஃபோல்டருக்குள் நுழைய",
+            tInfo5: "படி 5: நீங்கள் தேர்ந்தெடுத்த மாடலை டவுன்லோட் செய்வதற்கான கமாண்ட்",
+            tInfo6: "படி 6: டவுன்লোட் முடிந்ததும் டெர்மினலை மூடிவிட்டு சாட்பாட் செயலியை மீண்டும் திறக்கவும்.",
+            tagLight: "மிகவும் லேசானது (Very Light)",
+            tagNormal: "சாதாரண பாரம் (Normal)",
+            tagMedium: "நடுத்தர பாரம் (Medium)",
+            tagHeavy: "அதிக பாரம் / எச்சரிக்கை (Heavy System Load)"
+        },
+        en: {
+            ramLabel: "Enter Your Device RAM (GB):",
+            checkBtn: "Check Safe Models ➡",
+            p2Title: "Select Your Model",
+            p2Desc: "Click on any safe model below to select it for your chatbot deployment:",
+            p2NextBtn: "Next: Choose Integration Path ➡",
+            p3Title: "Choose Deployment Path",
+            p3Desc: "Select how you want to configure files on your hard drive.",
+            p4Title: "Execution Steps",
+            p4Desc: "Follow these targeted operations precisely to setup local files.",
+            structTitle: "Required Folder Architecture:",
+            impactTitle: "⚠️ System Crash Impact Analysis:",
+            impactDesc: "Running an LLM model equal to or greater than your physical RAM size completely drains memory registers. This results in severe system freezes, complete blue screen operating system crashes, or temporary data loss. To proactively counter this risk, Thiran AI restricts system configurations up to exactly half of your device capacity.",
+            disclaimer: "Disclaimer Note: This tool provides configuration mapping purely for hardware safety awareness. We hold zero interest in forcing or forcing compliance onto any developer. Full system choices reside autonomously with the operator.",
+            copy: "Copy", copied: "Copied!",
+            webStep1: "Step 1: Open your browser window and download the {model} file from official distribution mirrors.",
+            webStep2: "Step 2: Relocate the downloaded package directly inside 'llm models ➔ models 1' local target folder.",
+            webStep3: "Step 3: Exit and relaunch your local chatbot interface to successfully trigger automatic setup detection.",
+            tInfo1: "Step 1: Check current structural operations terminal environment path status",
+            tInfo2: "Step 2: Shift execution target environment directly into standard Downloads directory",
+            tInfo3: "Step 3: Securely execute simultaneous multi-level folder ecosystem architecture setup",
+            tInfo4: "Step 4: Navigate directory controls into the newly established target folder path",
+            tInfo5: "Step 5: Initialize download execution command for your chosen model framework",
+            tInfo6: "Step 6: Safely exit active command prompt and initiate standard chatbot main execution frame.",
+            tagLight: "Very Light",
+            tagNormal: "Normal Load",
+            tagMedium: "Medium Load",
+            tagHeavy: "Heavy Laptop Load"
+        }
+    };
+
+    let navigationHistory = [];
+    // Global tracking parameter storing model chosen on page 2
+    let selectedModelGlobal = null; 
+
+    function getActiveLanguageStrings() {
+        const selected = document.getElementById('langSelect').value;
+        return translations[selected] || translations['en'];
+    }
+
+    function updateLocalization() {
+        const targetDict = getActiveLanguageStrings();
+        document.getElementById('lbl-ram').innerText = targetDict.ramLabel;
+        document.getElementById('btn-check-ram').innerText = targetDict.checkBtn || "Check Safe Models ➡";
+    }
+
+    function switchPageInstance(targetId) {
+        const currentActive = document.querySelector('.page.active');
+        if (currentActive) {
+            navigationHistory.push(currentActive.id);
+            currentActive.classList.remove('active');
+        }
+        document.getElementById(targetId).classList.add('active');
+        document.getElementById('backBtn').style.visibility = "visible";
+    }
+
+    function goBack() {
+        if (navigationHistory.length > 0) {
+            const lastId = navigationHistory.pop();
+            document.querySelector('.page.active').classList.remove('active');
+            document.getElementById(lastId).classList.add('active');
+        }
+        if (navigationHistory.length === 0) {
+            document.getElementById('backBtn').style.visibility = "hidden";
+        }
+    }
+
+    function toggleTheme() {
+        const activeTheme = document.documentElement.getAttribute('data-theme');
+        document.documentElement.setAttribute('data-theme', activeTheme === 'dark' ? 'light' : 'dark');
+    }
+
+    function validateAndProceed() {
+        const inputField = document.getElementById('ramInput');
+        const ramParsed = parseFloat(inputField.value);
+        
+        if (isNaN(ramParsed) || ramParsed <= 0) {
+            alert("Please enter a valid numeric RAM value! / தயவுசெய்து சரியான ரேம் அளவை உள்ளிடவும்.");
+            inputField.focus();
+            return;
+        }
+        triggerModelProvisioning(ramParsed);
+    }
+
+    function triggerModelProvisioning(ramSize) {
+        const listDiv = document.getElementById('modelListContainer');
+        const langData = getActiveLanguageStrings();
+        const nextBtn = document.getElementById('btn-p2-next');
+        
+        document.getElementById('lbl-p2-title').innerText = langData.p2Title;
+        document.getElementById('lbl-p2-desc').innerText = langData.p2Desc;
+        nextBtn.innerText = langData.p2NextBtn;
+        
+        // Reset selections on refresh mapping reload
+        selectedModelGlobal = null;
+        nextBtn.disabled = true;
+
+        listDiv.innerHTML = "";
+        const maxSafetyCeiling = ramSize / 2;
+
+        let globalModelsArray = [
+            { name: "Qwen2-0.5B", size: 0.5, class: "tag-light", labelKey: "tagLight", cmd: "ollama run qwen2:0.5b" },
+            { name: "Phi-3 Mini 1.8GB", size: 1.8, class: "tag-normal", labelKey: "tagNormal", cmd: "ollama run phi3:mini" },
+            { name: "Gemma 2B", size: 2.3, class: "tag-normal", labelKey: "tagNormal", cmd: "ollama run gemma:2b" },
+            { name: "Llama 3-3B", size: 3.0, class: "tag-medium", labelKey: "tagMedium", cmd: "ollama run llama3:3b" },
+            { name: "Mistral 7B", size: 4.5, class: "tag-heavy", labelKey: "tagHeavy", cmd: "ollama run mistral" },
+            { name: "Llama 3-8B", size: 5.2, class: "tag-heavy", labelKey: "tagHeavy", cmd: "ollama run llama3:8b" }
+        ];
+
+        let safeSelection = globalModelsArray.filter(item => item.size <= maxSafetyCeiling);
+
+        if (safeSelection.length === 0) {
+            listDiv.innerHTML = `<div class="model-item" style="border-color:#ef4444; width:100%; cursor:default;">⚠️ <strong>No safe options found</strong>. 0.5GB model variants require minimum 1.5GB total device RAM allocation to remain operational.</div>`;
+        } else {
+            safeSelection.forEach((item, idx) => {
+                const displayHeavyStatus = langData[item.labelKey] || item.labelKey;
+                
+                // FIXED: Created element dynamically to attach proper JavaScript interactive event listeners
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "model-item";
+                itemDiv.innerHTML = `
+                    <div class="model-info">
+                        <strong>📌 ${item.name}</strong><br>
+                        <span style="font-size:0.85rem; opacity:0.8;">Local Footprint: ~${item.size} GB</span>
+                    </div>
+                    <span class="heavy-tag ${item.class}">${displayHeavyStatus}</span>
+                `;
+                
+                // Clicking triggers state update highlights
+                itemDiv.onclick = function() {
+                    document.querySelectorAll('.model-item').forEach(el => el.classList.remove('selected'));
+                    itemDiv.classList.add('selected');
+                    
+                    selectedModelGlobal = item; // Store target selection configuration values globally
+                    nextBtn.disabled = false;
+                    nextBtn.innerText = (langData.p2NextBtn.split(':')[0]) + ": Setup " + item.name + " ➡";
+                };
+
+                listDiv.appendChild(itemDiv);
+            });
+        }
+        switchPageInstance('page2');
+    }
+
+    function toPage3() {
+        const langData = getActiveLanguageStrings();
+        document.getElementById('lbl-p3-title').innerText = langData.p3Title;
+        document.getElementById('lbl-p3-desc').innerText = langData.p3Desc;
+        switchPageInstance('page3');
+    }
+
+    function toPage4(methodType) {
+        const langData = getActiveLanguageStrings();
+        
+        document.getElementById('lbl-p4-title').innerText = langData.p4Title;
+        document.getElementById('lbl-p4-desc').innerText = langData.p4Desc;
+        document.getElementById('lbl-struct-title').innerText = langData.structTitle;
+        document.getElementById('lbl-impact-title').innerText = langData.impactTitle;
+        document.getElementById('lbl-impact-desc').innerText = langData.impactDesc;
+        document.getElementById('lbl-disclaimer').innerText = langData.disclaimer;
+
+        const containerArea = document.getElementById('instructionsContainer');
+        containerArea.innerHTML = "";
+
+        // Pull verified chosen configuration metrics directly or apply secure micro baseline fallback
+        let targetModelName = selectedModelGlobal ? selectedModelGlobal.name : "Selected LLM";
+        let targetShellCmd = selectedModelGlobal ? selectedModelGlobal.cmd : "ollama run qwen2:0.5b";
+
+        if (methodType === 'web') {
+            const webSequence = [
+                { informationLabel: langData.webStep1.replace('{model}', targetModelName), commandText: `# Browser Search: Download official package for ${targetModelName}` },
+                { informationLabel: langData.webStep2, commandText: "# File Move: Cut/Paste downloaded file into: Downloads/llm models/models 1/" },
+                { informationLabel: langData.webStep3, commandText: "# Sync: Close and restart Chatbot App shell environment safely" }
+            ];
+            generateLineByLineInterface(webSequence, containerArea);
+        } else {
+            const terminalSequence = [
+                { informationLabel: langData.tInfo1, commandText: "pwd" },
+                { informationLabel: langData.tInfo2, commandText: "cd Downloads" },
+                { informationLabel: langData.tInfo3, commandText: 'mkdir -p "llm models/models 1"' },
+                { informationLabel: langData.tInfo4, commandText: 'cd "llm models/models 1"' },
+                { informationLabel: langData.tInfo5, commandText: targetShellCmd }, // Injecting exact chosen command
+                { informationLabel: langData.tInfo6, commandText: "# Complete. Close shell console and boot main application runtime" }
+            ];
+            generateLineByLineInterface(terminalSequence, containerArea);
+        }
+        switchPageInstance('page4');
+    }
+
+    function generateLineByLineInterface(stepsArr, mountElement) {
+        const langData = getActiveLanguageStrings();
+        stepsArr.forEach((block, index) => {
+            mountElement.innerHTML += `
+                <div class="step-block">
+                    <div class="step-info">${block.informationLabel}</div>
+                    <div class="code-row">
+                        <div class="code-text" id="target-code-string-${index}">${block.commandText}</div>
+                        <button class="row-copy-btn" onclick="copyIndividualLine('target-code-string-${index}', this)">${langData.copy}</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function copyIndividualLine(elementTargetId, buttonRef) {
+        const rawCodeText = document.getElementById(elementTargetId).innerText;
+        navigator.clipboard.writeText(rawCodeText);
+        
+        const langData = getActiveLanguageStrings();
+        buttonRef.innerText = langData.copied;
+        buttonRef.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        
+        setTimeout(() => { 
+            buttonRef.innerText = langData.copy; 
+            buttonRef.style.background = "#475569";
+        }, 1400);
+    }
+
+    updateLocalization();
+</script>
+
+</body>
+</html>
